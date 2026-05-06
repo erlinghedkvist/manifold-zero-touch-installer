@@ -1,0 +1,16 @@
+{
+  "product": "manifold CLOUD Zero Touch Installer",
+  "manifoldVersion": "1.6.7",
+  "baseInstaller": {
+    "name": "Ubuntu Server 22.04.5 LTS Jammy Jellyfish",
+    "architecture": "amd64",
+    "release": "20240911.4"
+  },
+  "trackedInputs": [
+    "manifold_setup.yml",
+    "nocloud/user-data",
+    "nocloud/meta-data",
+    "overlay/boot/grub/grub.cfg"
+  ],
+  "artifactPattern": "dist/manifold-zero-touch-<version>.iso"
+}

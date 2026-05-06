@@ -1,0 +1,217 @@
+---
+- name: "Dynamic Zero-Touch Provisioning for manifold CLOUD"
+  hosts: localhost
+  connection: local
+  become: yes
+  vars:
+    manifold_version: "1.6.7"
+    install_dir: "/home/manifold/manifold-cloud"
+    zip_file: "/tmp/manifold-cloud-{{ manifold_version }}.zip"
+    gdrive_file_id: "1H5w7SX7NdzhsE8m5SbbYHZjwFkmU8HnL"
+
+  tasks:
+    - name: "1. Create aliases in manifold .bashrc"
+      ansible.builtin.blockinfile:
+        path: "/home/manifold/.bashrc"
+        insertbefore: BOF
+        create: yes
+        mode: '0644'
+        marker: "# {mark} ANSIBLE MANAGED ALIASES"
+        block: |
+          alias egrep='grep -E --color=auto'
+          alias fgrep='grep -F --color=auto'
+          alias grep='grep --color=auto'
+          alias ipa='ip -br -c a'
+          alias l='ls -CF'
+          alias la='ls -A'
+          alias ll='ls -alF'
+          alias ls='ls --color=auto'
+          alias sudo='sudo '
+          alias msetup='sudo ansible-playbook /home/manifold/manifold_setup.yml'
+      ignore_errors: yes
+
+    - name: "2. Create aliases in root .bashrc"
+      ansible.builtin.blockinfile:
+        path: "/root/.bashrc"
+        insertbefore: BOF
+        create: yes
+        mode: '0644'
+        marker: "# {mark} ANSIBLE MANAGED ALIASES"
+        block: |
+          alias egrep='grep -E --color=auto'
+          alias fgrep='grep -F --color=auto'
+          alias grep='grep --color=auto'
+          alias ipa='ip -br -c a'
+          alias l='ls -CF'
+          alias la='ls -A'
+          alias ll='ls -alF'
+          alias ls='ls --color=auto'
+          alias sudo='sudo '
+
+    - name: "2b. Ensure profile sources bashrc on login"
+      ansible.builtin.copy:
+        dest: "/home/manifold/.bash_profile"
+        content: |
+          if [ -f ~/.bashrc ]; then
+            source ~/.bashrc
+          fi
+        mode: '0644'
+
+    - name: "3. Install gdown"
+      ansible.builtin.pip:
+        name: gdown
+        state: present
+
+    - name: "4. Download manifold CLOUD v{{ manifold_version }}"
+      ansible.builtin.command: "gdown {{ gdrive_file_id }} -O {{ zip_file }} --continue"
+      args:
+        creates: "{{ zip_file }}"
+
+    - name: "5. Auto-detect installed FPGA cards"
+      ansible.builtin.shell: "lsusb | grep -i 'Altera' | wc -l"
+      register: pac_count_result
+      changed_when: false
+      ignore_errors: yes
+
+    - name: "6. Log detection results"
+      ansible.builtin.debug:
+        msg: "System Check: Found {{ pac_count_result.stdout | default('0') }} Altera FPGA card(s)."
+
+    - name: "7. Hardware Check Warning"
+      ansible.builtin.debug:
+        msg: "WARNING: 0 cards found. manifold CLOUD requires at least 1 Altera FPGA Acceleration Card to function. Installation will continue, but will fail at the software configuration stage."
+      when: pac_count_result.stdout | default('0') | int == 0
+
+    - name: "8. Set dynamic hugepages variable"
+      ansible.builtin.set_fact:
+        calculated_hugepages: "{{ [(pac_count_result.stdout | default(0) | int) * 20, 20] | max }}"
+
+    - name: "9. Configure GRUB for IOMMU and Hugepages"
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX='
+        line: 'GRUB_CMDLINE_LINUX="default_hugepagesz=1G hugepagesz=1G hugepages={{ calculated_hugepages }} panic=1 intel_iommu=on iommu=pt"'
+      notify: update grub
+
+    - name: "9a. Purge cloud-init package entirely"
+      ansible.builtin.apt:
+        name: cloud-init
+        state: absent
+        purge: yes
+
+    - name: "9b. Remove leftover cloud-init directories"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/cloud
+        - /var/lib/cloud
+
+    - name: "9c. Clean legacy Ubuntu network file"
+      ansible.builtin.file:
+        path: /etc/netplan/50-cloud-init.yaml
+        state: absent
+      ignore_errors: yes
+
+    - name: "9d. Deploy custom Netplan"
+      ansible.builtin.copy:
+        dest: /etc/netplan/10-base-config.yaml
+        mode: '0600'
+        content: |
+          network:
+            version: 2
+            ethernets:
+              enp24s0f0:
+                dhcp4: true
+                optional: true
+              enp24s0f3:
+                dhcp4: true
+                optional: true
+
+              # --- Dynamic USB Dongle Catch-all ---
+              dynamic-usb-dongles:
+                match:
+                  name: "enx*"
+                dhcp4: true
+                optional: true
+    # --- APPLICATION DEPLOYMENT ---
+    - name: "10. Ensure manifold directory exists"
+      ansible.builtin.file:
+        path: "{{ install_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: "11. Unarchive manifold CLOUD"
+      ansible.builtin.unarchive:
+        src: "{{ zip_file }}"
+        dest: "{{ install_dir }}"
+        remote_src: yes
+        extra_opts: ['-o']
+
+    - name: "12. Detect the version subfolder"
+      ansible.builtin.shell: "ls -d {{ install_dir }}/*/ | head -n 1"
+      register: version_dir_path
+      changed_when: false
+
+    - name: "13. Copy default configuration examples"
+      ansible.builtin.copy:
+        src: "{{ version_dir_path.stdout }}data/examples/configuration"
+        dest: "{{ install_dir }}/configuration"
+        remote_src: yes
+        directory_mode: yes
+      ignore_errors: yes
+
+    # --- TASKS 14-18 TEMPORARILY COMMENTED OUT FOR LATER EXECUTION ---
+    
+    # - name: "14. Disable firmware load script"
+    #   ansible.builtin.replace:
+    #     path: "{{ version_dir_path.stdout }}install.sh"
+    #     regexp: '^(\s*\.\/load_firmware\.sh.*)$'
+    #     replace: '# \1 (Disabled by Ansible)'
+
+    # - name: "15. Pre-configure kexec-tools"
+    #   ansible.builtin.debconf:
+    #     name: kexec-tools
+    #     question: kexec-tools/load_kexec
+    #     value: 'false'
+    #     vtype: boolean
+
+    # - name: "16a. Set execution permissions on script"
+    #   ansible.builtin.file:
+    #     path: "{{ version_dir_path.stdout }}install.sh"
+    #     mode: '0755'
+
+    # - name: "16b. Execute manifold installation"
+    #   ansible.builtin.shell: "./install.sh"
+    #   args:
+    #     chdir: "{{ version_dir_path.stdout }}"
+    #     creates: "/usr/local/bin/manifold-cloud"
+    #   environment:
+    #     DEBIAN_FRONTEND: noninteractive
+
+    # - name: "17. Enable manifold service"
+    #   ansible.builtin.systemd:
+    #     name: manifold
+    #     enabled: yes
+    #   ignore_errors: yes
+
+    # - name: "18. Instantiate manifold software"
+    #   ansible.builtin.shell: "bash ./start.sh"
+    #   args:
+    #     chdir: "{{ version_dir_path.stdout }}"
+    #   async: 120
+    #   poll: 5
+    #   ignore_errors: yes
+
+    # --- END COMMENTED TASKS ---
+
+    - name: "19. Final Ownership Reclaim"
+      ansible.builtin.file:
+        path: /home/manifold
+        owner: '1000'
+        group: '1000'
+        recurse: yes
+
+  handlers:
+    - name: update grub
+      ansible.builtin.command: update-grub

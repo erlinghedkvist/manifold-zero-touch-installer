@@ -1,0 +1,69 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  network:
+    version: 2
+    ethernets:
+      all_en_devices:
+        match:
+          name: "en*"
+        dhcp4: true
+      all_eth_devices:
+        match:
+          name: "eth*"
+        dhcp4: true
+  
+  storage:
+    layout:
+      name: lvm
+      sizing-policy: all
+  
+  identity:
+    hostname: manifold
+    username: manifold
+    password: '$6$manifold$vhFsesp1Gn.f/aDWgM8EpI5g4tlZI28/YdQggMatwhUEUY1noBhm4mTU7lqrc2i8W464KiJOTCPrxDb.OO/Ib0'
+  
+  packages:
+    - ansible
+    - unzip
+    - python3-pip
+    - jq
+    - mc
+    - pciutils
+    - usbutils
+    - ethtool
+    - tcpdump
+    - htop
+    - tmux
+
+  late-commands:
+    # 1. Mask the wait-online service
+    - curtin in-target -- systemctl mask systemd-networkd-wait-online.service
+    
+    # 2. Ensure the directory exists
+    - mkdir -p /target/home/manifold
+    
+    # 3. Copy the playbook from the USB (cdrom)
+    - bash -c 'cp /cdrom/manifold_setup.yml /target/home/manifold/ || find / -name manifold_setup.yml -exec cp {} /target/home/manifold/ \;'
+    
+    # 4. Make. sure the hardware is visible inside the chroot environment.
+    - mount -o bind /dev /target/dev
+    - mount -o bind /sys /target/sys
+    - mount -o bind /proc /target/proc
+    
+    # 5. RUN THE PLAYBOOK
+    - curtin in-target -- ansible-playbook /home/manifold/manifold_setup.yml
+
+    # 6. DEBUGGER
+    # The below line opens an interactive shell on the primary console after the playbook finishes or fails. This allows you to inspect logs, check hardware detection, and debug any issues before rebooting. Type 'exit' to continue with the reboot process.
+    #- echo "PLAYBOOK FINISHED OR FAILED. OPENING DEBUG SHELL. TYPE 'exit' TO REBOOT." > /dev/tty1
+    #- /bin/bash -i < /dev/tty1 > /dev/tty1  
+    

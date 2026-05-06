@@ -1,0 +1,39 @@
+.DS_Store
+
+# Local build outputs and downloaded/generated installer artifacts.
+dist/
+build/
+*.iso
+*.img
+*.squashfs
+*.deb
+initrd
+hwe-initrd
+
+# Ubuntu installer payload extracted from the base ISO. Keep this on disk for
+# local builds, but do not store it in Git.
+.disk/
+boot/
+casper/
+dists/
+EFI/
+install/
+pool/
+boot.catalog
+md5sum.txt
+
+# Dependency and environment noise.
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Keep the authored zero-touch source files.
+!manifold_setup.yml
+!nocloud/
+!nocloud/user-data
+!nocloud/meta-data
+!overlay/
+!overlay/**
+!scripts/
+!scripts/**
