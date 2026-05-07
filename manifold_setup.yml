@@ -154,7 +154,7 @@
     - name: "13. Copy default configuration examples"
       ansible.builtin.copy:
         src: "{{ version_dir_path.stdout }}data/examples/configuration"
-        dest: "{{ install_dir }}/configuration"
+        dest: "{{ install_dir }}"
         remote_src: yes
         directory_mode: yes
       ignore_errors: yes
