@@ -5,6 +5,8 @@ Zero-touch Ubuntu Server installer for manifold CLOUD appliances.
 Customers should use the published installer ISO from the GitHub Releases page.
 The files in this repository are the source files used to build that ISO.
 
+This installer provisions manifold CLOUD software version `1.6.7`.
+
 ## Customer Install
 
 Use a Windows or macOS computer to create the bootable USB installer.
@@ -35,8 +37,21 @@ the USB stick as a bootable disk image.
 After the target server boots from the USB stick, select
 `Manifold CLOUD - Zero-Touch Autoinstall` if the boot menu appears.
 
+Connect the server to the internet before starting the install. Any available
+server network interface can be used; the installer configures server network
+interfaces for DHCP during installation. Internet access is required so the
+installer can download and install the required manifold CLOUD software and
+supporting packages.
+
 The installer runs Ubuntu autoinstall, installs the required packages, copies
 `manifold_setup.yml` from the installer media, and runs the Ansible playbook.
+When installation completes, reboot into the installed system and log in using
+the credentials provided separately.
+
+The zero-touch installer installs the manifold CLOUD software, but final
+application setup still has to be completed after the server is installed.
+Complete the manifold CLOUD configuration files for the deployment and apply
+the appropriate license before putting the server into service.
 
 ## Release Assets
 
