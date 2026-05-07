@@ -59,8 +59,8 @@ autoinstall:
     - mount -o bind /sys /target/sys
     - mount -o bind /proc /target/proc
     
-    # 5. RUN THE PLAYBOOK
-    - curtin in-target -- ansible-playbook /home/manifold/manifold_setup.yml
+      # 5. RUN THE PLAYBOOK (WITH LIVE COLORED OUTPUT TO MONITOR)
+    - curtin in-target -- bash -c "ANSIBLE_FORCE_COLOR=1 ansible-playbook /home/manifold/manifold_setup.yml | tee /dev/tty1"
 
     # 6. DEBUGGER
     # The below line opens an interactive shell on the primary console after the playbook finishes or fails. This allows you to inspect logs, check hardware detection, and debug any issues before rebooting. Type 'exit' to continue with the reboot process.
