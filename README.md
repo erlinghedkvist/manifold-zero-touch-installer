@@ -50,7 +50,7 @@ the credentials provided separately.
 
 The zero-touch installer installs the manifold CLOUD software, but final
 application setup still has to be completed after the server is installed.
-Complete the manifold CLOUD configuration files for the deployment and apply
+Run install.sh from the 1.6.7 directory, configure the manifold CLOUD configuration files (cluster.ts and cloud.ts) and apply
 the appropriate license before putting the server into service.
 
 ## Release Assets
