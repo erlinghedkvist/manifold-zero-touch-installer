@@ -53,6 +53,7 @@ xorriso -as mkisofs \
   -r -V "$VOLUME_ID" \
   -o "$OUT_ISO" \
   -J -joliet-long -l -iso-level 3 \
+  -graft-points \
   -b boot/grub/i386-pc/eltorito.img \
   -c boot.catalog \
   -no-emul-boot -boot-load-size 4 -boot-info-table \
@@ -60,6 +61,16 @@ xorriso -as mkisofs \
   -e EFI/boot/bootx64.efi \
   -no-emul-boot \
   -isohybrid-gpt-basdat \
-  "$ROOT_DIR"
+  ".disk=$ROOT_DIR/.disk" \
+  "boot=$ROOT_DIR/boot" \
+  "casper=$ROOT_DIR/casper" \
+  "dists=$ROOT_DIR/dists" \
+  "EFI=$ROOT_DIR/EFI" \
+  "install=$ROOT_DIR/install" \
+  "pool=$ROOT_DIR/pool" \
+  "boot.catalog=$ROOT_DIR/boot.catalog" \
+  "md5sum.txt=$ROOT_DIR/md5sum.txt" \
+  "manifold_setup.yml=$ROOT_DIR/manifold_setup.yml" \
+  "nocloud=$ROOT_DIR/nocloud"
 
 echo "Built $OUT_ISO"

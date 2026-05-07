@@ -93,19 +93,17 @@
         line: 'GRUB_CMDLINE_LINUX="default_hugepagesz=1G hugepagesz=1G hugepages={{ calculated_hugepages }} panic=1 intel_iommu=on iommu=pt"'
       notify: update grub
 
-    - name: "9a. Purge cloud-init package entirely"
-      ansible.builtin.apt:
-        name: cloud-init
-        state: absent
-        purge: yes
-
-    - name: "9b. Remove leftover cloud-init directories"
+    - name: "9a. Ensure cloud.cfg.d directory exists"
       ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /etc/cloud
-        - /var/lib/cloud
+        path: /etc/cloud/cloud.cfg.d
+        state: directory
+        mode: '0755'
+
+    - name: "9b. Write network disable file for cloud-init"
+      ansible.builtin.copy:
+        dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+        content: "network: {config: disabled}\n"
+        mode: '0644'
 
     - name: "9c. Clean legacy Ubuntu network file"
       ansible.builtin.file:
