@@ -4,7 +4,10 @@
   "baseInstaller": {
     "name": "Ubuntu Server 22.04.5 LTS Jammy Jellyfish",
     "architecture": "amd64",
-    "release": "20240911.4"
+    "release": "20240911.4",
+    "iso": "ubuntu-22.04.5-live-server-amd64.iso",
+    "sourceUrl": "https://releases.ubuntu.com/22.04.5/ubuntu-22.04.5-live-server-amd64.iso",
+    "sha256SumsUrl": "https://releases.ubuntu.com/22.04.5/SHA256SUMS"
   },
   "trackedInputs": [
     "manifold_setup.yml",
