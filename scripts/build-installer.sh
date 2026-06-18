@@ -4,25 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${1:-$(date +%Y.%m.%d)}"
 VOLUME_ID="${VOLUME_ID:-MANIFOLD_ZT}"
+UBUNTU_VERSION="${UBUNTU_VERSION:-22.04.5}"
+UBUNTU_ISO_NAME="${UBUNTU_ISO_NAME:-ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso}"
+BASE_ISO="${BASE_ISO:-$ROOT_DIR/build/base-installer/$UBUNTU_ISO_NAME}"
 OUT_DIR="$ROOT_DIR/dist"
 OUT_ISO="$OUT_DIR/manifold-zero-touch-$VERSION.iso"
 
 required_paths=(
-  "$ROOT_DIR/.disk"
-  "$ROOT_DIR/boot/grub"
-  "$ROOT_DIR/boot/grub/i386-pc/eltorito.img"
-  "$ROOT_DIR/casper"
-  "$ROOT_DIR/casper/hwe-initrd"
-  "$ROOT_DIR/casper/hwe-vmlinuz"
-  "$ROOT_DIR/casper/initrd"
-  "$ROOT_DIR/casper/vmlinuz"
-  "$ROOT_DIR/EFI/boot"
-  "$ROOT_DIR/EFI/boot/bootx64.efi"
-  "$ROOT_DIR/dists"
-  "$ROOT_DIR/install"
-  "$ROOT_DIR/pool"
-  "$ROOT_DIR/boot.catalog"
-  "$ROOT_DIR/md5sum.txt"
+  "$BASE_ISO"
+  "$ROOT_DIR/overlay/boot/grub/grub.cfg"
   "$ROOT_DIR/nocloud/user-data"
   "$ROOT_DIR/nocloud/meta-data"
   "$ROOT_DIR/manifold_setup.yml"
@@ -31,7 +21,7 @@ required_paths=(
 for path in "${required_paths[@]}"; do
   if [[ ! -e "$path" ]]; then
     echo "Missing required installer input: $path" >&2
-    echo "Extract the base Ubuntu Server ISO into this workspace first." >&2
+    echo "Run ./scripts/prepare-base-installer.sh first." >&2
     exit 1
   fi
 done
@@ -44,33 +34,33 @@ fi
 
 mkdir -p "$OUT_DIR"
 
-# Apply tracked overlay files onto the local extracted ISO tree before packing.
-if [[ -d "$ROOT_DIR/overlay" ]]; then
-  cp -R "$ROOT_DIR/overlay/." "$ROOT_DIR/"
+if [[ -e "$OUT_ISO" ]]; then
+  echo "Output already exists: $OUT_ISO" >&2
+  echo "Choose a different version or remove the existing output first." >&2
+  exit 1
 fi
 
-xorriso -as mkisofs \
-  -r -V "$VOLUME_ID" \
-  -o "$OUT_ISO" \
-  -J -joliet-long -l -iso-level 3 \
-  -graft-points \
-  -b boot/grub/i386-pc/eltorito.img \
-  -c boot.catalog \
-  -no-emul-boot -boot-load-size 4 -boot-info-table \
-  -eltorito-alt-boot \
-  -e EFI/boot/bootx64.efi \
-  -no-emul-boot \
-  -isohybrid-gpt-basdat \
-  ".disk=$ROOT_DIR/.disk" \
-  "boot=$ROOT_DIR/boot" \
-  "casper=$ROOT_DIR/casper" \
-  "dists=$ROOT_DIR/dists" \
-  "EFI=$ROOT_DIR/EFI" \
-  "install=$ROOT_DIR/install" \
-  "pool=$ROOT_DIR/pool" \
-  "boot.catalog=$ROOT_DIR/boot.catalog" \
-  "md5sum.txt=$ROOT_DIR/md5sum.txt" \
-  "manifold_setup.yml=$ROOT_DIR/manifold_setup.yml" \
-  "nocloud=$ROOT_DIR/nocloud"
+# Start from the verified Ubuntu image and replay its boot configuration. This
+# preserves the upstream hybrid MBR/GPT layout needed when the ISO is written
+# directly to a USB drive.
+xorriso \
+  -indev "$BASE_ISO" \
+  -outdev "$OUT_ISO" \
+  -boot_image any replay \
+  -volid "$VOLUME_ID" \
+  -map "$ROOT_DIR/overlay/boot/grub/grub.cfg" /boot/grub/grub.cfg \
+  -map "$ROOT_DIR/manifold_setup.yml" /manifold_setup.yml \
+  -map "$ROOT_DIR/nocloud/user-data" /nocloud/user-data \
+  -map "$ROOT_DIR/nocloud/meta-data" /nocloud/meta-data \
+  -commit \
+  -end
+
+system_area="$(
+  xorriso -indev "$OUT_ISO" -report_system_area plain 2>&1
+)"
+if [[ "$system_area" != *"System area summary:"*"MBR"*"GPT"* ]]; then
+  echo "Built image is missing the expected hybrid MBR/GPT partition table." >&2
+  exit 1
+fi
 
 echo "Built $OUT_ISO"

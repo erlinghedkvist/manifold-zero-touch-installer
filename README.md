@@ -76,10 +76,12 @@ Git history.
 
 Maintainers use this repository to build the release ISO.
 
-The local workspace may also contain extracted Ubuntu installer files and
-directories such as `.disk/`, `boot/`, `casper/`, `pool/`, `EFI/`, `dists/`,
-`install/`, `boot.catalog`, and `md5sum.txt`. These are intentionally ignored by
-Git because they include large upstream binaries.
+The build starts from a locally cached, verified Ubuntu installer ISO so
+Ubuntu's hybrid USB boot metadata is preserved. The workspace may also contain
+extracted Ubuntu installer files and directories such as `.disk/`, `boot/`,
+`casper/`, `pool/`, `EFI/`, `dists/`, `install/`, `boot.catalog`, and
+`md5sum.txt`. These are intentionally ignored by Git because they include large
+upstream binaries.
 
 To make a fresh workspace buildable, download and extract the pinned Ubuntu
 Server installer payload first:
@@ -88,12 +90,13 @@ Server installer payload first:
 ./scripts/prepare-base-installer.sh
 ```
 
-The script downloads `ubuntu-22.04.5-live-server-amd64.iso` from
+The script downloads and caches `ubuntu-22.04.5-live-server-amd64.iso` from
 `https://releases.ubuntu.com/22.04.5/`, verifies it against Ubuntu's
 `SHA256SUMS`, and extracts the ignored base installer files into the repository
-root. If those files are already present, pass `--force` to extract over them.
+root. If those files are already present, it leaves them unchanged; pass
+`--force` to extract over them.
 
-Build a customer ISO from a workspace that contains those ignored base files:
+Build a customer ISO from the cached, verified Ubuntu ISO:
 
 ```sh
 ./scripts/build-installer.sh

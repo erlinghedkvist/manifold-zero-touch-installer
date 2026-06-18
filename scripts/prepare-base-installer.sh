@@ -56,12 +56,6 @@ for path in "${base_payload_paths[@]}"; do
   fi
 done
 
-if [[ "$payload_exists" -eq 1 && "$force_extract" -ne 1 ]]; then
-  echo "Base installer payload already exists in this workspace." >&2
-  echo "Run $0 --force to extract the pinned Ubuntu ISO over it." >&2
-  exit 1
-fi
-
 mkdir -p "$CACHE_DIR"
 
 if [[ ! -f "$ISO_PATH" ]]; then
@@ -91,6 +85,12 @@ if command -v sha256sum >/dev/null 2>&1; then
   (cd "$CACHE_DIR" && sha256sum -c "$ISO_SHA256_PATH")
 else
   (cd "$CACHE_DIR" && shasum -a 256 -c "$ISO_SHA256_PATH")
+fi
+
+if [[ "$payload_exists" -eq 1 && "$force_extract" -ne 1 ]]; then
+  echo "Base installer ISO is ready at $ISO_PATH"
+  echo "Extracted payload already exists; leaving it unchanged."
+  exit 0
 fi
 
 echo "Extracting base installer payload into $ROOT_DIR"
