@@ -119,17 +119,9 @@
           network:
             version: 2
             ethernets:
-              enp24s0f0:
-                dhcp4: true
-                optional: true
-              enp24s0f3:
-                dhcp4: true
-                optional: true
-
-              # --- Dynamic USB Dongle Catch-all ---
-              dynamic-usb-dongles:
+              all-en-devices:
                 match:
-                  name: "enx*"
+                  name: "en*"
                 dhcp4: true
                 optional: true
     # --- APPLICATION DEPLOYMENT ---
