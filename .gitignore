@@ -21,6 +21,7 @@ install/
 pool/
 boot.catalog
 md5sum.txt
+/ubuntu
 
 # Dependency and environment noise.
 node_modules/

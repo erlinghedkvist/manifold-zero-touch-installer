@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-UBUNTU_VERSION="${UBUNTU_VERSION:-22.04.5}"
+UBUNTU_VERSION="${UBUNTU_VERSION:-24.04.5}"
 UBUNTU_ISO_NAME="${UBUNTU_ISO_NAME:-ubuntu-${UBUNTU_VERSION}-live-server-amd64.iso}"
 UBUNTU_BASE_URL="${UBUNTU_BASE_URL:-https://releases.ubuntu.com/${UBUNTU_VERSION}}"
 CACHE_DIR="${CACHE_DIR:-$ROOT_DIR/build/base-installer}"

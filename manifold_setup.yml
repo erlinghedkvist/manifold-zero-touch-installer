@@ -4,10 +4,11 @@
   connection: local
   become: yes
   vars:
-    manifold_version: "1.6.7"
+    manifold_version: "1.7.3"
     install_dir: "/home/manifold/manifold-cloud"
     zip_file: "/tmp/manifold-cloud-{{ manifold_version }}.zip"
-    gdrive_file_id: "1H5w7SX7NdzhsE8m5SbbYHZjwFkmU8HnL"
+    gdrive_file_id: "1-00N1ga9q497ytTMriE1KH_kAEDf4Q4M"
+    gdown_venv: "/opt/manifold-gdown"
 
   tasks:
     - name: "1. Create aliases in manifold .bashrc"
@@ -61,9 +62,11 @@
       ansible.builtin.pip:
         name: gdown
         state: present
+        virtualenv: "{{ gdown_venv }}"
+        virtualenv_command: /usr/bin/python3 -m venv
 
     - name: "4. Download manifold CLOUD v{{ manifold_version }}"
-      ansible.builtin.command: "gdown {{ gdrive_file_id }} -O {{ zip_file }} --continue"
+      ansible.builtin.command: "{{ gdown_venv }}/bin/gdown {{ gdrive_file_id }} -O {{ zip_file }} --continue"
       args:
         creates: "{{ zip_file }}"
 

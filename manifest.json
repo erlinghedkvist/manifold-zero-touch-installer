@@ -1,13 +1,14 @@
 {
   "product": "manifold CLOUD Zero Touch Installer",
-  "manifoldVersion": "1.6.7",
+  "installerVersion": "1.0.6",
+  "manifoldVersion": "1.7.3",
   "baseInstaller": {
-    "name": "Ubuntu Server 22.04.5 LTS Jammy Jellyfish",
+    "name": "Ubuntu Server 24.04.5 LTS Noble Numbat",
     "architecture": "amd64",
-    "release": "20240911.4",
-    "iso": "ubuntu-22.04.5-live-server-amd64.iso",
-    "sourceUrl": "https://releases.ubuntu.com/22.04.5/ubuntu-22.04.5-live-server-amd64.iso",
-    "sha256SumsUrl": "https://releases.ubuntu.com/22.04.5/SHA256SUMS"
+    "release": "20260909",
+    "iso": "ubuntu-24.04.5-live-server-amd64.iso",
+    "sourceUrl": "https://releases.ubuntu.com/24.04.5/ubuntu-24.04.5-live-server-amd64.iso",
+    "sha256SumsUrl": "https://releases.ubuntu.com/24.04.5/SHA256SUMS"
   },
   "trackedInputs": [
     "manifold_setup.yml",
@@ -15,5 +16,5 @@
     "nocloud/meta-data",
     "overlay/boot/grub/grub.cfg"
   ],
-  "artifactPattern": "dist/manifold-zero-touch-<version>.iso"
+  "artifactPattern": "dist/manifold-zero-touch-<version>-usb-files.zip"
 }

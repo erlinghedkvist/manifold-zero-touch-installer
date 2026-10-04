@@ -35,6 +35,8 @@ autoinstall:
     - ansible
     - unzip
     - python3-pip
+    - python3-venv
+    - python3-setuptools
     - jq
     - mc
     - pciutils
@@ -60,10 +62,9 @@ autoinstall:
     - mount -o bind /proc /target/proc
     
       # 5. RUN THE PLAYBOOK (WITH LIVE COLORED OUTPUT TO MONITOR)
-    - curtin in-target -- bash -c "ANSIBLE_FORCE_COLOR=1 ansible-playbook /home/manifold/manifold_setup.yml | tee /dev/tty1"
+    - curtin in-target -- bash -o pipefail -c "LANG=C.UTF-8 LC_ALL=C.UTF-8 ANSIBLE_FORCE_COLOR=1 ansible-playbook /home/manifold/manifold_setup.yml | tee /dev/tty1"
 
     # 6. DEBUGGER
     # The below line opens an interactive shell on the primary console after the playbook finishes or fails. This allows you to inspect logs, check hardware detection, and debug any issues before rebooting. Type 'exit' to continue with the reboot process.
     #- echo "PLAYBOOK FINISHED OR FAILED. OPENING DEBUG SHELL. TYPE 'exit' TO REBOOT." > /dev/tty1
-    #- /bin/bash -i < /dev/tty1 > /dev/tty1  
-    
+    #- /bin/bash -i < /dev/tty1 > /dev/tty1
