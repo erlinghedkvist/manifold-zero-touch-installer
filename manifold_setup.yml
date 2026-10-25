@@ -4,14 +4,17 @@
   connection: local
   become: yes
   vars:
-    manifold_version: "1.7.3"
+    manifold_version: "1.7.8"
     install_dir: "/home/manifold/manifold-cloud"
     zip_file: "/tmp/manifold-cloud-{{ manifold_version }}.zip"
-    gdrive_file_id: "1-00N1ga9q497ytTMriE1KH_kAEDf4Q4M"
+    gdrive_file_id: "1q1dP8G_9nnAZts4DzWd_lQm-LNYAAiBq"
     gdown_venv: "/opt/manifold-gdown"
+    node_version: "24.22.1"
+    wetty_version: "4.0.1"
+    wetty_port: 8022
 
   tasks:
-    - name: "1. Create aliases in manifold .bashrc"
+    - name: "Create aliases in manifold .bashrc"
       ansible.builtin.blockinfile:
         path: "/home/manifold/.bashrc"
         insertbefore: BOF
@@ -31,7 +34,7 @@
           alias msetup='sudo ansible-playbook /home/manifold/manifold_setup.yml'
       ignore_errors: yes
 
-    - name: "2. Create aliases in root .bashrc"
+    - name: "Create aliases in root .bashrc"
       ansible.builtin.blockinfile:
         path: "/root/.bashrc"
         insertbefore: BOF
@@ -49,7 +52,7 @@
           alias ls='ls --color=auto'
           alias sudo='sudo '
 
-    - name: "2b. Ensure profile sources bashrc on login"
+    - name: "Ensure profile sources bashrc on login"
       ansible.builtin.copy:
         dest: "/home/manifold/.bash_profile"
         content: |
@@ -58,63 +61,108 @@
           fi
         mode: '0644'
 
-    - name: "3. Install gdown"
+    - name: "Ensure Nano is installed"
+      ansible.builtin.apt:
+        name: nano
+        state: present
+      tags: nano
+
+    - name: "Enable Nano syntax definitions"
+      ansible.builtin.lineinfile:
+        path: /etc/nanorc
+        line: 'include "/usr/share/nano/*.nanorc"'
+        state: present
+      tags: nano
+
+    - name: "Add Nano TypeScript and TSX highlighting"
+      ansible.builtin.copy:
+        dest: /usr/share/nano/typescript.nanorc
+        mode: '0644'
+        content: |
+          syntax typescript "\.(ts|tsx)$"
+          header "^#!.*(node|deno)"
+
+          color brightblue "\<(abstract|any|as|asserts|async|await|boolean|break|case|catch|class|const|constructor|continue|debugger|declare|default|delete|do|else|enum|export|extends|false|finally|for|from|function|get|if|implements|import|in|infer|instanceof|interface|is|keyof|let|module|namespace|never|new|null|number|object|of|override|private|protected|public|readonly|require|return|satisfies|set|static|string|super|switch|symbol|this|throw|true|try|type|typeof|undefined|unique|unknown|using|var|void|while|with|yield)\>"
+          color cyan "\<(Array|BigInt|Date|Error|JSON|Map|Math|Number|Object|Promise|Record|RegExp|Set|String|console|globalThis|process)\>"
+          color brightmagenta "\<[A-Z][A-Za-z0-9_]*\>"
+          color yellow "[-+/*%=<>!&|?:~^]+"
+          color brightyellow "\<[0-9]+(\.[0-9]+)?([eE][-+]?[0-9]+)?\>"
+          color brightgreen ""(\\.|[^"])*"" "'(\\.|[^'])*'" "`(\\.|[^`])*`"
+          color brightblack "//.*"
+          color brightblack start="/\*" end="\*/"
+      tags: nano
+
+    - name: "Configure Nano for the manifold user"
+      ansible.builtin.copy:
+        dest: /home/manifold/.nanorc
+        owner: '1000'
+        group: '1000'
+        mode: '0644'
+        content: |
+          set autoindent
+          set indicator
+          set linenumbers
+          set tabsize 2
+          set tabstospaces
+      tags: nano
+
+    - name: "Install gdown"
       ansible.builtin.pip:
         name: gdown
         state: present
         virtualenv: "{{ gdown_venv }}"
         virtualenv_command: /usr/bin/python3 -m venv
 
-    - name: "4. Download manifold CLOUD v{{ manifold_version }}"
+    - name: "Download manifold CLOUD v{{ manifold_version }}"
       ansible.builtin.command: "{{ gdown_venv }}/bin/gdown {{ gdrive_file_id }} -O {{ zip_file }} --continue"
       args:
         creates: "{{ zip_file }}"
 
-    - name: "5. Auto-detect installed FPGA cards"
+    - name: "Auto-detect installed FPGA cards"
       ansible.builtin.shell: "lsusb | grep -i 'Altera' | wc -l"
       register: pac_count_result
       changed_when: false
       ignore_errors: yes
 
-    - name: "6. Log detection results"
+    - name: "Log detection results"
       ansible.builtin.debug:
         msg: "System Check: Found {{ pac_count_result.stdout | default('0') }} Altera FPGA card(s)."
 
-    - name: "7. Hardware Check Warning"
+    - name: "Hardware Check Warning"
       ansible.builtin.debug:
         msg: "WARNING: 0 cards found. manifold CLOUD requires at least 1 Altera FPGA Acceleration Card to function. Installation will continue, but will fail at the software configuration stage."
       when: pac_count_result.stdout | default('0') | int == 0
 
-    - name: "8. Set dynamic hugepages variable"
+    - name: "Set dynamic hugepages variable"
       ansible.builtin.set_fact:
         calculated_hugepages: "{{ [(pac_count_result.stdout | default(0) | int) * 20, 20] | max }}"
 
-    - name: "9. Configure GRUB for IOMMU and Hugepages"
+    - name: "Configure GRUB for IOMMU and Hugepages"
       ansible.builtin.lineinfile:
         path: /etc/default/grub
         regexp: '^GRUB_CMDLINE_LINUX='
         line: 'GRUB_CMDLINE_LINUX="default_hugepagesz=1G hugepagesz=1G hugepages={{ calculated_hugepages }} panic=1 intel_iommu=on iommu=pt"'
       notify: update grub
 
-    - name: "9a. Ensure cloud.cfg.d directory exists"
+    - name: "Ensure cloud.cfg.d directory exists"
       ansible.builtin.file:
         path: /etc/cloud/cloud.cfg.d
         state: directory
         mode: '0755'
 
-    - name: "9b. Write network disable file for cloud-init"
+    - name: "Write network disable file for cloud-init"
       ansible.builtin.copy:
         dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
         content: "network: {config: disabled}\n"
         mode: '0644'
 
-    - name: "9c. Clean legacy Ubuntu network file"
+    - name: "Clean legacy Ubuntu network file"
       ansible.builtin.file:
         path: /etc/netplan/50-cloud-init.yaml
         state: absent
       ignore_errors: yes
 
-    - name: "9d. Deploy custom Netplan"
+    - name: "Deploy custom Netplan"
       ansible.builtin.copy:
         dest: /etc/netplan/10-base-config.yaml
         mode: '0600'
@@ -128,25 +176,25 @@
                 dhcp4: true
                 optional: true
     # --- APPLICATION DEPLOYMENT ---
-    - name: "10. Ensure manifold directory exists"
+    - name: "Ensure manifold directory exists"
       ansible.builtin.file:
         path: "{{ install_dir }}"
         state: directory
         mode: '0755'
 
-    - name: "11. Unarchive manifold CLOUD"
+    - name: "Unarchive manifold CLOUD"
       ansible.builtin.unarchive:
         src: "{{ zip_file }}"
         dest: "{{ install_dir }}"
         remote_src: yes
         extra_opts: ['-o']
 
-    - name: "12. Detect the version subfolder"
+    - name: "Detect the version subfolder"
       ansible.builtin.shell: "ls -d {{ install_dir }}/*/ | head -n 1"
       register: version_dir_path
       changed_when: false
 
-    - name: "13. Copy default configuration examples"
+    - name: "Copy default configuration examples"
       ansible.builtin.copy:
         src: "{{ version_dir_path.stdout }}data/examples/configuration"
         dest: "{{ install_dir }}"
@@ -156,25 +204,25 @@
 
     # --- TASKS 14-18 TEMPORARILY COMMENTED OUT FOR LATER EXECUTION ---
     
-    # - name: "14. Disable firmware load script"
+    # - name: "Disable firmware load script"
     #   ansible.builtin.replace:
     #     path: "{{ version_dir_path.stdout }}install.sh"
     #     regexp: '^(\s*\.\/load_firmware\.sh.*)$'
     #     replace: '# \1 (Disabled by Ansible)'
 
-    # - name: "15. Pre-configure kexec-tools"
+    # - name: "Pre-configure kexec-tools"
     #   ansible.builtin.debconf:
     #     name: kexec-tools
     #     question: kexec-tools/load_kexec
     #     value: 'false'
     #     vtype: boolean
 
-    # - name: "16a. Set execution permissions on script"
+    # - name: "Set execution permissions on script"
     #   ansible.builtin.file:
     #     path: "{{ version_dir_path.stdout }}install.sh"
     #     mode: '0755'
 
-    # - name: "16b. Execute manifold installation"
+    # - name: "Execute manifold installation"
     #   ansible.builtin.shell: "./install.sh"
     #   args:
     #     chdir: "{{ version_dir_path.stdout }}"
@@ -182,13 +230,13 @@
     #   environment:
     #     DEBIAN_FRONTEND: noninteractive
 
-    # - name: "17. Enable manifold service"
+    # - name: "Enable manifold service"
     #   ansible.builtin.systemd:
     #     name: manifold
     #     enabled: yes
     #   ignore_errors: yes
 
-    # - name: "18. Instantiate manifold software"
+    # - name: "Instantiate manifold software"
     #   ansible.builtin.shell: "bash ./start.sh"
     #   args:
     #     chdir: "{{ version_dir_path.stdout }}"
@@ -198,7 +246,169 @@
 
     # --- END COMMENTED TASKS ---
 
-    - name: "19. Final Ownership Reclaim"
+    # --- WEB TERMINAL ---
+    - name: "Install WeTTY build and SSH dependencies"
+      ansible.builtin.apt:
+        name:
+          - build-essential
+          - openssh-client
+          - openssh-server
+          - openssl
+          - python3
+          - xz-utils
+        state: present
+        update_cache: yes
+
+    - name: "Ensure SSH is enabled for WeTTY logins"
+      ansible.builtin.systemd:
+        name: ssh
+        enabled: yes
+        state: started
+
+    - name: "Download pinned Node.js LTS"
+      ansible.builtin.get_url:
+        url: "https://nodejs.org/download/release/v{{ node_version }}/node-v{{ node_version }}-linux-x64.tar.xz"
+        dest: "/tmp/node-v{{ node_version }}-linux-x64.tar.xz"
+        checksum: "sha256:https://nodejs.org/download/release/v{{ node_version }}/SHASUMS256.txt"
+        mode: '0644'
+
+    - name: "Install pinned Node.js LTS"
+      ansible.builtin.unarchive:
+        src: "/tmp/node-v{{ node_version }}-linux-x64.tar.xz"
+        dest: /opt
+        remote_src: yes
+        creates: "/opt/node-v{{ node_version }}-linux-x64/bin/node"
+
+    - name: "Create WeTTY service account"
+      ansible.builtin.user:
+        name: wetty
+        system: yes
+        home: /var/lib/wetty
+        create_home: yes
+        shell: /usr/sbin/nologin
+
+    - name: "Create WeTTY TLS directory"
+      ansible.builtin.file:
+        path: /etc/wetty
+        state: directory
+        owner: root
+        group: wetty
+        mode: '0750'
+
+    - name: "Create self-signed WeTTY TLS certificate"
+      ansible.builtin.shell: |
+        set -e
+        subject_alt_name="DNS:manifold,DNS:localhost,IP:127.0.0.1"
+        for address in $(hostname -I 2>/dev/null); do
+          case "$address" in
+            *:*) continue ;;
+          esac
+          subject_alt_name="${subject_alt_name},IP:${address}"
+        done
+        openssl req -x509 -newkey rsa:3072 -sha256 -nodes \
+          -keyout /etc/wetty/wetty.key \
+          -out /etc/wetty/wetty.crt \
+          -days 825 \
+          -subj "/CN=manifold" \
+          -addext "subjectAltName=${subject_alt_name}"
+        chown root:wetty /etc/wetty/wetty.key /etc/wetty/wetty.crt
+        chmod 0640 /etc/wetty/wetty.key
+        chmod 0644 /etc/wetty/wetty.crt
+      args:
+        executable: /bin/bash
+        creates: /etc/wetty/wetty.crt
+      notify: restart wetty
+
+    - name: "Install pinned WeTTY release"
+      ansible.builtin.shell: |
+        set -e
+        wetty_bin=/opt/wetty/bin/wetty
+        if [ ! -x "$wetty_bin" ] || [ "$($wetty_bin --version)" != "{{ wetty_version }}" ]; then
+          /opt/node-v{{ node_version }}-linux-x64/bin/npm install \
+            --global --prefix /opt/wetty "wetty@{{ wetty_version }}"
+          echo WETTY_UPDATED
+        fi
+      args:
+        executable: /bin/bash
+      environment:
+        PATH: "/opt/node-v{{ node_version }}-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      register: wetty_install
+      changed_when: "'WETTY_UPDATED' in wetty_install.stdout"
+      notify: restart wetty
+
+    - name: "Install WeTTY startup wrapper"
+      ansible.builtin.copy:
+        dest: /usr/local/sbin/wetty-start
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          set -euo pipefail
+
+          port={{ wetty_port }}
+          origins=(
+            --allowed-origin "https://localhost:${port}"
+            --allowed-origin "https://127.0.0.1:${port}"
+          )
+
+          for host in "$(hostname)" "$(hostname -f 2>/dev/null || true)" $(hostname -I 2>/dev/null); do
+            [ -n "$host" ] || continue
+            case "$host" in
+              *:*) continue ;;
+            esac
+            origins+=(--allowed-origin "https://${host}:${port}")
+          done
+
+          exec /opt/wetty/bin/wetty \
+            --host 0.0.0.0 \
+            --port "$port" \
+            --title "manifold CLOUD Terminal" \
+            --ssl-key /etc/wetty/wetty.key \
+            --ssl-cert /etc/wetty/wetty.crt \
+            --ssh-host localhost \
+            --ssh-user manifold \
+            --ssh-auth password \
+            "${origins[@]}"
+      notify: restart wetty
+
+    - name: "Install WeTTY systemd service"
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/wetty.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=WeTTY web terminal
+          Wants=network-online.target
+          After=network-online.target ssh.service
+
+          [Service]
+          Type=simple
+          User=wetty
+          Group=wetty
+          Environment=HOME=/var/lib/wetty
+          Environment=PATH=/opt/node-v{{ node_version }}-linux-x64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          ExecStart=/usr/local/sbin/wetty-start
+          Restart=on-failure
+          RestartSec=5
+          NoNewPrivileges=true
+          PrivateTmp=true
+          ProtectHome=true
+          ProtectSystem=strict
+          ReadWritePaths=/var/lib/wetty
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: restart wetty
+
+    - name: "Enable and start WeTTY"
+      ansible.builtin.systemd:
+        name: wetty
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    # --- END WEB TERMINAL ---
+
+    - name: "Reclaim final ownership"
       ansible.builtin.file:
         path: /home/manifold
         owner: '1000'
@@ -208,3 +418,9 @@
   handlers:
     - name: update grub
       ansible.builtin.command: update-grub
+
+    - name: restart wetty
+      ansible.builtin.systemd:
+        name: wetty
+        state: restarted
+        daemon_reload: yes

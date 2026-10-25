@@ -3,8 +3,8 @@
 Prepare a bootable USB installer, then use it to provision a manifold CLOUD
 server.
 
-Installer release **1.0.6** provisions manifold CLOUD software version `1.7.3` on
-Ubuntu Server `24.04.5` LTS (Noble Numbat), for amd64 servers.
+Installer release **1.0.7** provisions manifold CLOUD software version `1.7.8`
+on Ubuntu Server `24.04.5` LTS (Noble Numbat), for amd64 servers.
 
 There are two stages:
 
@@ -16,8 +16,8 @@ There are two stages:
 No command line or custom ISO build is required for the USB preparation steps
 below. The server needs internet access during installation.
 
-Release 1.0.6 replaces the previous Ubuntu Server 22.04.5 and manifold CLOUD
-1.6.7 versions. See [CHANGELOG.md](CHANGELOG.md) for the full release history.
+Release 1.0.7 updates manifold CLOUD from 1.7.3 to 1.7.8 while retaining Ubuntu
+Server 24.04.5. See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ## 1. Create the USB Installer
 
@@ -25,7 +25,7 @@ This stage is done on your Windows or Mac computer, not on the target server.
 
 ### What You Need
 
-- `manifold-zero-touch-1.0.6-usb-files.zip` from
+- `manifold-zero-touch-1.0.7-usb-files.zip` from
   [GitHub Releases](https://github.com/erlinghedkvist/manifold-zero-touch-installer/releases).
 - [Ubuntu Server 24.04.5 amd64 ISO](https://releases.ubuntu.com/24.04.5/ubuntu-24.04.5-live-server-amd64.iso).
 - An 8 GB or larger USB stick. Preparing it erases its existing contents.
@@ -47,7 +47,7 @@ and check that you have selected the correct device before erasing it.
 ### Windows
 
 1. Download `ubuntu-24.04.5-live-server-amd64.iso` and
-   `manifold-zero-touch-1.0.6-usb-files.zip` to your computer using the links
+   `manifold-zero-touch-1.0.7-usb-files.zip` to your computer using the links
    above. These are two separate downloads.
 2. Insert the USB stick and open Rufus. Select the USB device, click Select,
    and choose **`ubuntu-24.04.5-live-server-amd64.iso` only**.
@@ -55,7 +55,7 @@ and check that you have selected the correct device before erasing it.
 4. Click Start. If prompted, select **Write in ISO Image mode**, not DD mode.
    Confirm the USB erase and wait for Rufus to finish, then close Rufus.
    The USB now contains the standard Ubuntu installer, without zero-touch.
-5. In File Explorer, right-click `manifold-zero-touch-1.0.6-usb-files.zip`
+5. In File Explorer, right-click `manifold-zero-touch-1.0.7-usb-files.zip`
    and choose **Extract All**. Extract it to a folder on your computer.
 6. Open that extracted folder. Copy its contents (`boot`, `nocloud`,
    `manifold_setup.yml`, and `md5sum.txt`) into the USB's top-level folder.
@@ -142,17 +142,36 @@ supporting packages.
 3. Select `Manifold CLOUD - Zero-Touch Autoinstall` if the installer menu
    appears. This is the default entry.
 4. Allow Ubuntu installation and provisioning to finish. The installer installs
-   supporting packages, downloads and extracts manifold CLOUD 1.7.3, and applies
+   supporting packages, downloads and extracts manifold CLOUD 1.7.8, and applies
    the server configuration, including hardware-dependent hugepage settings.
 5. When installation completes, remove the USB when prompted, reboot into the
    installed system, and log in using the credentials provided separately.
+
+### Web Terminal
+
+The installer enables a WeTTY browser terminal on the local network. Open
+`https://SERVER-IP:8022` and sign in with the server's `manifold` SSH account.
+WeTTY uses a locally generated, self-signed TLS certificate, so the browser will
+show a certificate warning on the first visit. Confirm that the address is the
+intended local server before accepting the warning. Do not forward port 8022
+from an internet-facing router.
+
+WeTTY builds its allowed-origin list from the server's hostname and IP addresses
+when the service starts. If the server's DHCP address changes, run
+`sudo systemctl restart wetty` before using the new address.
+
+Nano 7.2 is installed with line numbers, auto-indentation, two-space soft tabs,
+and syntax highlighting. Ubuntu's packaged definitions cover YAML and shell
+scripts; the zero-touch configuration adds TypeScript and TSX highlighting.
+Maintainers can apply only the Nano configuration by running
+`sudo ansible-playbook /home/manifold/manifold_setup.yml --tags nano`.
 
 ### Complete the manifold CLOUD Setup
 
 The zero-touch stage prepares Ubuntu and the manifold CLOUD files. The final
 application installation, configuration, and licensing remain manual:
 
-1. Run `install.sh` from `/home/manifold/manifold-cloud/1.7.3`.
+1. Run `install.sh` from `/home/manifold/manifold-cloud/1.7.8`.
 2. Configure manifold CLOUD using the supplied examples in
    `/home/manifold/manifold-cloud/configuration/`.
 3. Apply the appropriate license before putting the server into service.

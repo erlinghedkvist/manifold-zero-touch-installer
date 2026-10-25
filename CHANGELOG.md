@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.7 - 2026-10-25
+
+This release of manifold CLOUD Zero Touch Installer provisions manifold CLOUD
+1.7.8 on Ubuntu Server 24.04.5 LTS (Noble Numbat), for amd64 servers.
+
+### Changes
+
+- Update the manifold CLOUD download from 1.7.3 to 1.7.8.
+- Point provisioning at the new `manifold-cloud-1.7.8.zip` Google Drive
+  archive.
+- Update customer and maintainer documentation for the new application and
+  installer versions.
+- Install Node.js 24 LTS and WeTTY 4.0.1 as a systemd-managed HTTPS browser
+  terminal with a self-signed certificate on local-network port 8022.
+- Configure Nano with line numbers, two-space soft tabs, auto-indentation, and
+  syntax highlighting for TypeScript/TSX, YAML, and shell scripts.
+
+### Testing
+
+Zero-touch provisioning was completed on the test server. WeTTY HTTPS access
+and Nano highlighting were verified from a Mac on the local network. The
+vendor-supplied `install.sh` still requires validation for manifold CLOUD 1.7.8.
+
 ## 1.0.6 - 2026-10-04
 
 This release of manifold CLOUD Zero Touch Installer provisions manifold CLOUD

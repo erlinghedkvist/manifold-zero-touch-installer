@@ -8,6 +8,10 @@ They are not required to create a USB or install a server.
 On 2026-10-04, the updated USB package completed the entire setup successfully
 on the test server using the existing development USB prepared on macOS.
 Earlier checks confirmed Ubuntu 24.04, two Altera FPGA cards, and 40 hugepages.
+On 2026-10-25, WeTTY was confirmed reachable over HTTPS on port 8022 from a
+Mac on the local network after accepting the self-signed certificate warning.
+Nano syntax highlighting was also confirmed through WeTTY for YAML, shell, and
+TypeScript files.
 
 This verifies the tested USB's extracted-file layout. A fresh USB created using
 the Finder instructions and a Windows USB created using Rufus still need
@@ -71,8 +75,8 @@ package places the four custom files at their USB paths and regenerates
 Optionally build a complete local ISO:
 
 ```sh
-./scripts/build-installer.sh 1.0.6
-./scripts/checksum.sh dist/manifold-zero-touch-1.0.6.iso
+./scripts/build-installer.sh 1.0.7
+./scripts/checksum.sh dist/manifold-zero-touch-1.0.7.iso
 ```
 
 The complete ISO exceeds GitHub's 2 GiB per-asset limit and is not the customer
@@ -80,8 +84,8 @@ release download. It can still be flashed with Etcher for local tests.
 
 ## Development USB
 
-The current development USB contains Ubuntu Server 24.04.5 and the manifold
-CLOUD 1.7.3 provisioning configuration. It uses extracted installer files on a
+The current release configuration uses Ubuntu Server 24.04.5 and provisions
+manifold CLOUD 1.7.8. The development USB uses extracted installer files on a
 writable FAT32 filesystem, including `EFI/`, `boot/`, `casper/`, and `nocloud/`.
 For configuration changes on that same Ubuntu base, rebuild the USB-files
 ZIP and merge its contents onto the USB. This also updates `md5sum.txt` so
@@ -97,8 +101,19 @@ The provisioning playbook installs `gdown` into `/opt/manifold-gdown`, using
 The autoinstall command explicitly sets `LANG=C.UTF-8` and `LC_ALL=C.UTF-8`
 when running Ansible inside the target system.
 
+The playbook installs Node.js 24.22.1 LTS and WeTTY 4.0.1 under `/opt`, then
+runs WeTTY as an unprivileged system user over HTTPS on TCP port 8022. It
+generates a self-signed certificate and allows HTTPS origins for the machine's
+hostname and current IPv4 addresses. Restart `wetty.service` after a DHCP
+address change. This is intentionally a trusted-LAN service; internet exposure
+requires a trusted certificate, reverse proxy, and separate security review.
+
+Nano uses Ubuntu's packaged YAML and shell syntax definitions. The playbook
+adds `/usr/share/nano/typescript.nanorc` for `.ts` and `.tsx` files and manages
+`/home/manifold/.nanorc` for the editor preferences documented in the README.
+
 Server testing must also verify the FPGA driver installed by the vendor's
-`1.7.3/install.sh`: the supplied archive still includes
-`bittware-520nmx-520nx-cots-3.0-1.Ubuntu22.04.deb`. The zero-touch playbook
-continues to leave `install.sh`, application configuration, and licensing for
-manual setup after the OS installation.
+`1.7.8/install.sh` and confirm that the driver package in the new archive is
+compatible with Ubuntu 24.04.5. The zero-touch playbook continues to leave
+`install.sh`, application configuration, and licensing for manual setup after
+the OS installation.
