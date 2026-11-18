@@ -85,7 +85,7 @@ release download. It can still be flashed with Etcher for local tests.
 ## Development USB
 
 The current release configuration uses Ubuntu Server 24.04.5 and provisions
-manifold CLOUD 1.7.8. The development USB uses extracted installer files on a
+manifold CLOUD 1.7.12. The development USB uses extracted installer files on a
 writable FAT32 filesystem, including `EFI/`, `boot/`, `casper/`, and `nocloud/`.
 For configuration changes on that same Ubuntu base, rebuild the USB-files
 ZIP and merge its contents onto the USB. This also updates `md5sum.txt` so
@@ -113,7 +113,7 @@ adds `/usr/share/nano/typescript.nanorc` for `.ts` and `.tsx` files and manages
 `/home/manifold/.nanorc` for the editor preferences documented in the README.
 
 Server testing must also verify the FPGA driver installed by the vendor's
-`1.7.8/install.sh` and confirm that the driver package in the new archive is
+`1.7.12/install.sh` and confirm that the driver package in the new archive is
 compatible with Ubuntu 24.04.5. The zero-touch playbook continues to leave
 `install.sh`, application configuration, and licensing for manual setup after
 the OS installation.

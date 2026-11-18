@@ -3,7 +3,7 @@
 Prepare a bootable USB installer, then use it to provision a manifold CLOUD
 server.
 
-Installer release **1.0.7** provisions manifold CLOUD software version `1.7.8`
+Installer release **1.0.7** provisions manifold CLOUD software version `1.7.12`
 on Ubuntu Server `24.04.5` LTS (Noble Numbat), for amd64 servers.
 
 There are two stages:
@@ -16,7 +16,7 @@ There are two stages:
 No command line or custom ISO build is required for the USB preparation steps
 below. The server needs internet access during installation.
 
-Release 1.0.7 updates manifold CLOUD from 1.7.3 to 1.7.8 while retaining Ubuntu
+Release 1.0.7 updates manifold CLOUD from 1.7.3 to 1.7.12 while retaining Ubuntu
 Server 24.04.5. See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ## 1. Create the USB Installer
@@ -142,7 +142,7 @@ supporting packages.
 3. Select `Manifold CLOUD - Zero-Touch Autoinstall` if the installer menu
    appears. This is the default entry.
 4. Allow Ubuntu installation and provisioning to finish. The installer installs
-   supporting packages, downloads and extracts manifold CLOUD 1.7.8, and applies
+   supporting packages, downloads and extracts manifold CLOUD 1.7.12, and applies
    the server configuration, including hardware-dependent hugepage settings.
 5. When installation completes, remove the USB when prompted, reboot into the
    installed system, and log in using the credentials provided separately.
@@ -171,7 +171,7 @@ Maintainers can apply only the Nano configuration by running
 The zero-touch stage prepares Ubuntu and the manifold CLOUD files. The final
 application installation, configuration, and licensing remain manual:
 
-1. Run `install.sh` from `/home/manifold/manifold-cloud/1.7.8`.
+1. Run `install.sh` from `/home/manifold/manifold-cloud/1.7.12`.
 2. Configure manifold CLOUD using the supplied examples in
    `/home/manifold/manifold-cloud/configuration/`.
 3. Apply the appropriate license before putting the server into service.

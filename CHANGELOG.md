@@ -1,14 +1,14 @@
 # Changelog
 
-## 1.0.7 - 2026-10-25
+## 1.0.7 - 2026-11-17
 
 This release of manifold CLOUD Zero Touch Installer provisions manifold CLOUD
-1.7.8 on Ubuntu Server 24.04.5 LTS (Noble Numbat), for amd64 servers.
+1.7.12 on Ubuntu Server 24.04.5 LTS (Noble Numbat), for amd64 servers.
 
 ### Changes
 
-- Update the manifold CLOUD download from 1.7.3 to 1.7.8.
-- Point provisioning at the new `manifold-cloud-1.7.8.zip` Google Drive
+- Update the manifold CLOUD download from 1.7.3 to 1.7.12.
+- Point provisioning at the new `manifold-cloud-1.7.12.zip` Google Drive
   archive.
 - Update customer and maintainer documentation for the new application and
   installer versions.
@@ -19,9 +19,10 @@ This release of manifold CLOUD Zero Touch Installer provisions manifold CLOUD
 
 ### Testing
 
-Zero-touch provisioning was completed on the test server. WeTTY HTTPS access
-and Nano highlighting were verified from a Mac on the local network. The
-vendor-supplied `install.sh` still requires validation for manifold CLOUD 1.7.8.
+Zero-touch provisioning, WeTTY HTTPS access, and Nano highlighting were
+previously verified with the pre-release 1.7.8 payload. End-to-end provisioning
+and the vendor-supplied `install.sh` still require validation with manifold
+CLOUD 1.7.12 before publishing this release.
 
 ## 1.0.6 - 2026-10-04
 

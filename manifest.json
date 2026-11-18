@@ -1,7 +1,7 @@
 {
   "product": "manifold CLOUD Zero Touch Installer",
   "installerVersion": "1.0.7",
-  "manifoldVersion": "1.7.8",
+  "manifoldVersion": "1.7.12",
   "baseInstaller": {
     "name": "Ubuntu Server 24.04.5 LTS Noble Numbat",
     "architecture": "amd64",

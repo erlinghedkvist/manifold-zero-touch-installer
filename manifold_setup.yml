@@ -4,10 +4,10 @@
   connection: local
   become: yes
   vars:
-    manifold_version: "1.7.8"
+    manifold_version: "1.7.12"
     install_dir: "/home/manifold/manifold-cloud"
     zip_file: "/tmp/manifold-cloud-{{ manifold_version }}.zip"
-    gdrive_file_id: "1q1dP8G_9nnAZts4DzWd_lQm-LNYAAiBq"
+    gdrive_file_id: "1ei8O3sXBZSnN7bIHoJ9s1qXOHL0FYUrU"
     gdown_venv: "/opt/manifold-gdown"
     node_version: "24.22.1"
     wetty_version: "4.0.1"
